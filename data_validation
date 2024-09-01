@@ -1,0 +1,33 @@
+import datacompy
+#Step1 - Define the database connection to the source database
+df_source = spark.read \
+    .format("jdbc") \
+    .option("url", "jdbc:oracle:thin:@//hostname:port/service") \
+    .option("dbtable", "schema.table") \
+    .option("user", "username") \
+    .option("password", "password") \
+    .option("driver", "oracle.jdbc.driver.OracleDriver") \
+    .load()
+#Step2 - Read the source data into a dataframe (df1)
+df_source.createOrReplaceTempView("source")
+df_source=spark.sql(df_source)
+#display(df_source)
+
+#Step3 - Read the migrated data into a dataframe
+df_delta = spark.read.table("/path/to/delta/table")
+#display(df_delta)
+
+#Step4 - Compare the two dataframes
+compare = datacompy.Compare(
+    df_source,
+    df_delta,
+    join_columns='col1',  #You can also specify a list of columns
+    abs_tol=0.0001,
+    rel_tol=0,
+    df1_name='source',
+    df2_name='delta')
+#OR
+#compare = datacompy.Compare(df_source, df_delta, join_columns=['col1', 'col2'])
+
+#Step 5 - Generate the report
+compare.report()
